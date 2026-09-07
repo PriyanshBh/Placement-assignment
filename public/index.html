@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="PolicyPulse insurance data operations dashboard">
+  <title>PolicyPulse — Operations Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <a class="brand" href="#overview" aria-label="PolicyPulse home">
+        <span class="brand-mark"><i></i><i></i><i></i></span>
+        <span>Policy<span>Pulse</span></span>
+      </a>
+      <nav>
+        <p class="nav-label">Workspace</p>
+        <a class="nav-item active" href="#overview" data-page="overview"><svg><use href="#grid-icon"/></svg>Overview</a>
+        <a class="nav-item" href="#import" data-page="import"><svg><use href="#upload-icon"/></svg>Data import</a>
+        <a class="nav-item" href="#policies" data-page="policies"><svg><use href="#shield-icon"/></svg>Policy search</a>
+        <a class="nav-item" href="#messages" data-page="messages"><svg><use href="#clock-icon"/></svg>Scheduler</a>
+        <p class="nav-label lower">System</p>
+        <a class="nav-item" href="#health" data-page="health"><svg><use href="#activity-icon"/></svg>Server health</a>
+      </nav>
+      <div class="sidebar-foot">
+        <div class="avatar">PP</div>
+        <div><strong>Admin workspace</strong><span>Assessment environment</span></div>
+        <span class="online-dot"></span>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <button class="icon-button menu-button" id="menuButton" aria-label="Toggle menu"><svg><use href="#menu-icon"/></svg></button>
+        <div class="crumb"><span>PolicyPulse</span><b>/</b><strong id="currentPage">Overview</strong></div>
+        <div class="top-actions"><span class="live-pill"><i></i>System live</span><button class="icon-button" id="refreshButton" aria-label="Refresh dashboard"><svg><use href="#refresh-icon"/></svg></button></div>
+      </header>
+
+      <div class="content">
+        <section class="page active" id="overview">
+          <div class="hero-row">
+            <div><p class="eyebrow">Operations console</p><h1>Good <span id="dayPeriod">morning</span>, Admin.</h1><p>Here’s a clear view of your policy portfolio and system activity.</p></div>
+            <button class="primary-button jump" data-target="import"><svg><use href="#upload-icon"/></svg>Import policy data</button>
+          </div>
+          <div class="stat-grid">
+            <article class="stat-card accent-blue"><div class="stat-icon"><svg><use href="#users-icon"/></svg></div><div><span>Total customers</span><strong data-stat="users">—</strong><small>Across all accounts</small></div></article>
+            <article class="stat-card accent-mint"><div class="stat-icon"><svg><use href="#shield-icon"/></svg></div><div><span>Active policies</span><strong data-stat="activePolicies">—</strong><small><b data-stat="policies">—</b> policies total</small></div></article>
+            <article class="stat-card accent-amber"><div class="stat-icon"><svg><use href="#calendar-icon"/></svg></div><div><span>Expiring soon</span><strong data-stat="expiring">—</strong><small>Within the next 30 days</small></div></article>
+            <article class="stat-card accent-violet"><div class="stat-icon"><svg><use href="#agent-icon"/></svg></div><div><span>Active agents</span><strong data-stat="agents">—</strong><small>Managing your portfolio</small></div></article>
+          </div>
+          <div class="overview-grid">
+            <article class="panel portfolio-panel">
+              <div class="panel-head"><div><h2>Portfolio snapshot</h2><p>Your data model at a glance</p></div><span class="updated">Live data</span></div>
+              <div class="portfolio-body">
+                <div class="ring" id="policyRing"><div><strong data-stat="policies">0</strong><span>Policies</span></div></div>
+                <div class="legend-list">
+                  <div><i class="dot-blue"></i><span>Customers</span><strong data-stat="users">0</strong></div>
+                  <div><i class="dot-mint"></i><span>Accounts</span><strong data-stat="accounts">0</strong></div>
+                  <div><i class="dot-amber"></i><span>Lines of business</span><strong data-stat="lobs">0</strong></div>
+                  <div><i class="dot-violet"></i><span>Carriers</span><strong data-stat="carriers">0</strong></div>
+                </div>
+              </div>
+            </article>
+            <article class="panel quick-panel">
+              <div class="panel-head"><div><h2>Quick actions</h2><p>Move work forward</p></div></div>
+              <button class="quick-action jump" data-target="policies"><span class="quick-icon blue"><svg><use href="#search-icon"/></svg></span><span><strong>Find a policy</strong><small>Search by customer name</small></span><b>→</b></button>
+              <button class="quick-action jump" data-target="messages"><span class="quick-icon violet"><svg><use href="#clock-icon"/></svg></span><span><strong>Schedule a message</strong><small>Set a future delivery time</small></span><b>→</b></button>
+              <button class="quick-action jump" data-target="health"><span class="quick-icon mint"><svg><use href="#activity-icon"/></svg></span><span><strong>Review server health</strong><small>Live CPU and memory usage</small></span><b>→</b></button>
+            </article>
+          </div>
+          <article class="panel table-panel">
+            <div class="panel-head"><div><h2>Recently imported policies</h2><p>The latest records in your portfolio</p></div><button class="text-button jump" data-target="policies">Search all <span>→</span></button></div>
+            <div class="table-wrap"><table><thead><tr><th>Policy</th><th>Customer</th><th>Line of business</th><th>Carrier</th><th>Ends</th><th>Status</th></tr></thead><tbody id="recentPolicies"><tr><td colspan="6" class="empty-cell">Import a sheet to see policy activity.</td></tr></tbody></table></div>
+          </article>
+        </section>
+
+        <section class="page" id="import">
+          <div class="page-heading"><div><p class="eyebrow">Data ingestion</p><h1>Import policy data</h1><p>Upload an XLSX or CSV sheet. Processing runs safely in a background worker.</p></div><a class="secondary-button" href="/sample-policy-data.xlsx" download><svg><use href="#download-icon"/></svg>Download sample</a></div>
+          <article class="panel upload-panel">
+            <form id="uploadForm">
+              <label class="drop-zone" id="dropZone" for="fileInput">
+                <input id="fileInput" name="file" type="file" accept=".xlsx,.csv" hidden>
+                <span class="upload-orbit"><svg><use href="#upload-cloud-icon"/></svg></span>
+                <strong>Drop your policy sheet here</strong><p>or <u>browse from your computer</u></p><small>XLSX or CSV · Maximum 15 MB</small>
+              </label>
+              <div class="selected-file hidden" id="selectedFile"><span class="file-icon">XL</span><div><strong id="fileName"></strong><small id="fileSize"></small></div><button type="button" id="clearFile" aria-label="Remove file">×</button></div>
+              <button class="primary-button wide" id="uploadButton" type="submit" disabled><span>Start secure import</span><svg><use href="#arrow-icon"/></svg></button>
+            </form>
+          </article>
+          <div class="info-grid">
+            <article><span>01</span><div><strong>Worker-thread processing</strong><p>Heavy parsing stays off the main event loop, keeping the API responsive.</p></div></article>
+            <article><span>02</span><div><strong>Six clean collections</strong><p>Agents, users, accounts, LOBs, carriers, and policies stay normalized.</p></div></article>
+            <article><span>03</span><div><strong>Safe repeat imports</strong><p>Policies are upserted by policy number, avoiding accidental duplicates.</p></div></article>
+          </div>
+        </section>
+
+        <section class="page" id="policies">
+          <div class="page-heading"><div><p class="eyebrow">Policy intelligence</p><h1>Find customer policies</h1><p>Search a first name or email to retrieve fully linked policy details.</p></div></div>
+          <article class="panel search-panel">
+            <form id="searchForm" class="search-box"><svg><use href="#search-icon"/></svg><input id="searchInput" placeholder="Try “Olivia” or an email address" minlength="2" required><button class="primary-button" type="submit">Search policies</button></form>
+          </article>
+          <div id="searchMeta" class="result-meta hidden"></div>
+          <div id="searchResults" class="policy-results"><div class="blank-state"><span><svg><use href="#search-icon"/></svg></span><h3>Start with a customer name</h3><p>Matched policies will appear here with the agent, account, carrier, and coverage dates.</p></div></div>
+          <article class="panel aggregation-panel">
+            <div class="panel-head"><div><h2>Policies by customer</h2><p>Live aggregation from MongoDB</p></div><button class="secondary-button compact" id="loadAggregation">Refresh aggregation</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Customer</th><th>Email</th><th>Total policies</th><th>Active</th><th>Coverage window</th></tr></thead><tbody id="aggregationBody"><tr><td colspan="5" class="empty-cell">Loading aggregation…</td></tr></tbody></table></div>
+          </article>
+        </section>
+
+        <section class="page" id="messages">
+          <div class="page-heading"><div><p class="eyebrow">Message automation</p><h1>Schedule a message</h1><p>The message is inserted into the delivery collection exactly when it becomes due.</p></div></div>
+          <div class="scheduler-grid">
+            <article class="panel form-panel">
+              <form id="scheduleForm">
+                <label>Message<textarea id="messageInput" rows="5" maxlength="2000" placeholder="Write the message to deliver…" required></textarea></label>
+                <div class="field-row"><label>Delivery day<input id="dayInput" type="date" required></label><label>Delivery time<input id="timeInput" type="time" required></label></div>
+                <div class="timezone-note"><svg><use href="#globe-icon"/></svg>Scheduled in <strong>Asia/Kolkata</strong> local time</div>
+                <button class="primary-button wide" type="submit">Schedule message <svg><use href="#clock-icon"/></svg></button>
+              </form>
+            </article>
+            <article class="panel queue-panel"><div class="panel-head"><div><h2>Delivery queue</h2><p>Latest scheduled messages</p></div><button class="icon-button" id="refreshMessages"><svg><use href="#refresh-icon"/></svg></button></div><div id="messageQueue" class="message-list"><div class="empty-mini">No messages scheduled yet.</div></div></article>
+          </div>
+        </section>
+
+        <section class="page" id="health">
+          <div class="page-heading"><div><p class="eyebrow">Runtime telemetry</p><h1>Server health</h1><p>Live process metrics with automatic recovery at sustained high CPU.</p></div><span class="live-pill large"><i></i>Monitoring every 5s</span></div>
+          <div class="health-grid">
+            <article class="panel gauge-card"><div class="panel-head"><div><h2>CPU utilization</h2><p>Node.js process load</p></div></div><div class="gauge" id="cpuGauge"><div><strong id="cpuValue">0%</strong><span>Current</span></div></div><div class="threshold-line"><span>Restart threshold</span><strong id="cpuThreshold">70%</strong></div></article>
+            <article class="panel server-card"><div class="panel-head"><div><h2>Runtime details</h2><p>Current supervised instance</p></div></div><dl><div><dt>Process ID</dt><dd id="processId">—</dd></div><div><dt>Memory footprint</dt><dd id="memoryValue">—</dd></div><div><dt>Uptime</dt><dd id="uptimeValue">—</dd></div><div><dt>Node runtime</dt><dd id="nodeVersion">—</dd></div><div><dt>Automatic restarts</dt><dd id="restartCount">0</dd></div></dl></article>
+          </div>
+          <article class="safety-card"><span><svg><use href="#shield-icon"/></svg></span><div><strong>Automatic recovery is enabled</strong><p>If CPU stays at or above 70% for three consecutive samples, the child server exits with a dedicated signal and the supervisor starts a fresh instance automatically.</p></div></article>
+        </section>
+      </div>
+    </main>
+  </div>
+  <div class="toast-wrap" id="toastWrap"></div>
+
+  <svg aria-hidden="true" class="svg-defs"><defs>
+    <symbol id="grid-icon" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/></symbol>
+    <symbol id="upload-icon" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 20h14"/></symbol>
+    <symbol id="shield-icon" viewBox="0 0 24 24"><path d="M12 3l8 3v5c0 5-3.3 8.5-8 10-4.7-1.5-8-5-8-10V6l8-3z"/></symbol>
+    <symbol id="clock-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="activity-icon" viewBox="0 0 24 24"><path d="M3 12h4l2.2-6 4.2 12 2.2-6H21"/></symbol>
+    <symbol id="menu-icon" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="refresh-icon" viewBox="0 0 24 24"><path d="M20 6v5h-5M4 18v-5h5M18.5 9A7 7 0 006.4 6.5L4 11m16 2l-2.4 4.5A7 7 0 015.5 15"/></symbol>
+    <symbol id="users-icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20v-2c0-3 2-5 6-5s6 2 6 5v2M16 5a3 3 0 010 6m2 2c2 .5 3 2 3 5v2"/></symbol>
+    <symbol id="calendar-icon" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></symbol>
+    <symbol id="agent-icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c.5-5 3-7 8-7s7.5 2 8 7"/></symbol>
+    <symbol id="search-icon" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></symbol>
+    <symbol id="download-icon" viewBox="0 0 24 24"><path d="M12 4v12m0 0l5-5m-5 5-5-5M5 20h14"/></symbol>
+    <symbol id="upload-cloud-icon" viewBox="0 0 24 24"><path d="M7 18H5a4 4 0 01-.5-8A7 7 0 0118 9a4.5 4.5 0 01.5 9H17M12 20V10m0 0l-4 4m4-4 4 4"/></symbol>
+    <symbol id="arrow-icon" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+    <symbol id="globe-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol>
+  </defs></svg>
+  <script src="/app.js"></script>
+</body>
+</html>
