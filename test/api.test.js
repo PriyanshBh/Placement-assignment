@@ -11,9 +11,15 @@ const { createApp } = require('../src/app');
 const { ScheduledMessage, Message } = require('../src/models');
 const { deliverDueMessages } = require('../src/services/scheduler');
 const { DateTime } = require('luxon');
+const exportedApp = require('../src/app');
 
 let mongo;
 let app;
+
+test('Vercel entrypoint exports an Express request handler', () => {
+  assert.equal(typeof exportedApp, 'function');
+  assert.equal(typeof exportedApp.createApp, 'function');
+});
 
 before(async () => {
   mongo = await MongoMemoryServer.create();

@@ -1,5 +1,11 @@
 const path = require('path');
-require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
+const os = require('os');
+require('dotenv').config({
+  path: path.join(__dirname, '..', '.env'),
+  quiet: process.env.NODE_ENV === 'production' || Boolean(process.env.VERCEL || process.env.RENDER)
+});
+
+const isServerless = Boolean(process.env.VERCEL);
 
 module.exports = {
   port: Number(process.env.PORT || 4000),
@@ -10,5 +16,6 @@ module.exports = {
   cpuMonitorEnabled: process.env.CPU_MONITOR_ENABLED !== 'false',
   maxUploadMb: Number(process.env.MAX_UPLOAD_MB || 15),
   timezone: process.env.TZ || 'Asia/Kolkata',
-  uploadDir: path.join(__dirname, '..', 'uploads')
+  isServerless,
+  uploadDir: isServerless ? path.join(os.tmpdir(), 'policy-pulse-uploads') : path.join(__dirname, '..', 'uploads')
 };

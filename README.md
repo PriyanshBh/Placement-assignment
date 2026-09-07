@@ -63,3 +63,19 @@ npm test
 ```
 
 Configuration is documented in `.env.example`. For a direct, non-supervised process use `npm run start:direct`; `npm start` is the recommended command because it enables automatic restart behavior.
+
+## Cloud deployment
+
+### Vercel
+
+The repository exports `src/app.js` directly as the Express handler and includes `vercel.json` so the import worker is present in the serverless bundle. Add this environment variable to the Vercel project for Production, Preview, and Development:
+
+```text
+MONGODB_URI=mongodb+srv://<database-user>:<url-encoded-password>@<cluster>/<database>?retryWrites=true&w=majority
+```
+
+Uploads use Vercel's writable temporary directory. The dashboard and request-driven APIs work on Vercel, but the continuously running scheduler and CPU-triggered process supervisor are long-running server features; demonstrate those locally or deploy the Node server to Render.
+
+### Render
+
+Use `npm install` as the build command and `npm start` as the start command so the CPU restart supervisor is active. Set `MONGODB_URI`, `TZ=Asia/Kolkata`, and the CPU settings from `.env.example`. Render's `bad auth : authentication failed` message means the Atlas database username/password in its environment is not valid; update that value in the Render service before redeploying.
