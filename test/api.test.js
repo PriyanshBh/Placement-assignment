@@ -19,6 +19,7 @@ let app;
 test('Vercel entrypoint exports an Express request handler', () => {
   assert.equal(typeof exportedApp, 'function');
   assert.equal(typeof exportedApp.createApp, 'function');
+  assert.match(require.resolve('../src/workers/import-worker.js'), /import-worker\.js$/);
 });
 
 before(async () => {

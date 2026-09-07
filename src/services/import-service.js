@@ -1,9 +1,9 @@
 const { Worker } = require('worker_threads');
-const path = require('path');
+const workerPath = require.resolve('../workers/import-worker.js');
 
 function runImport(filePath, extension, mongoUri) {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(path.join(__dirname, '..', 'workers', 'import-worker.js'), {
+    const worker = new Worker(workerPath, {
       workerData: { filePath, extension, mongoUri }
     });
     let settled = false;

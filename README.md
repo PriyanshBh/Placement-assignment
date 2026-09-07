@@ -68,7 +68,7 @@ Configuration is documented in `.env.example`. For a direct, non-supervised proc
 
 ### Vercel
 
-The repository exports `src/app.js` directly as the Express handler and includes `vercel.json` so the import worker is present in the serverless bundle. Add this environment variable to the Vercel project for Production, Preview, and Development:
+The repository exports `src/app.js` directly as the Express handler, allowing Vercel's zero-configuration Express detection to build it without custom routing. The import worker is referenced through `require.resolve`, allowing Vercel's dependency tracer to include it in the function. Add this environment variable to the Vercel project for Production, Preview, and Development:
 
 ```text
 MONGODB_URI=mongodb+srv://<database-user>:<url-encoded-password>@<cluster>/<database>?retryWrites=true&w=majority
