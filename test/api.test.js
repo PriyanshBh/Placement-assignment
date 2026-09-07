@@ -10,6 +10,7 @@ const { connectDatabase, disconnectDatabase } = require('../src/db');
 const { createApp } = require('../src/app');
 const { ScheduledMessage, Message } = require('../src/models');
 const { deliverDueMessages } = require('../src/services/scheduler');
+const { DateTime } = require('luxon');
 
 let mongo;
 let app;
@@ -70,6 +71,14 @@ test('aggregation groups policies by user', async () => {
   const response = await request(app).get('/api/policies/aggregate').expect(200);
   const olivia = response.body.data.find((item) => item.firstName === 'Olivia');
   assert.equal(olivia.totalPolicies, 2);
+});
+
+test('message API interprets the supplied time in Asia/Kolkata', async () => {
+  const local = DateTime.now().setZone('Asia/Kolkata').plus({ days: 1 }).set({ second: 0, millisecond: 0 });
+  const response = await request(app).post('/api/messages/schedule').send({
+    message: 'Timezone-safe reminder', day: local.toFormat('yyyy-MM-dd'), time: local.toFormat('HH:mm')
+  }).expect(201);
+  assert.equal(new Date(response.body.data.scheduledFor).toISOString(), local.toUTC().toISO());
 });
 
 test('due scheduler inserts message into delivery collection', async () => {

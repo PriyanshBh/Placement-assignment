@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs/promises');
 const crypto = require('crypto');
 const { z } = require('zod');
+const { DateTime } = require('luxon');
 const config = require('../config');
 const asyncHandler = require('../utils/async-handler');
 const { runImport } = require('../services/import-service');
@@ -90,8 +91,10 @@ const scheduleSchema = z.object({
 router.post('/messages/schedule', asyncHandler(async (req, res) => {
   const parsed = scheduleSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ success: false, message: 'Provide message, day (YYYY-MM-DD), and time (HH:mm).', details: parsed.error.issues });
-  const scheduledFor = new Date(`${parsed.data.day}T${parsed.data.time}:00`);
-  if (Number.isNaN(scheduledFor.valueOf()) || scheduledFor <= new Date()) return res.status(400).json({ success: false, message: 'Scheduled day and time must be in the future.' });
+  const zonedTime = DateTime.fromISO(`${parsed.data.day}T${parsed.data.time}:00`, { zone: config.timezone });
+  if (!zonedTime.isValid) return res.status(400).json({ success: false, message: `The supplied date/time is invalid for ${config.timezone}.` });
+  const scheduledFor = zonedTime.toJSDate();
+  if (scheduledFor <= new Date()) return res.status(400).json({ success: false, message: `Scheduled day and time must be in the future in ${config.timezone}.` });
   const item = await ScheduledMessage.create({ message: parsed.data.message, scheduledFor, timezone: config.timezone });
   res.status(201).json({ success: true, message: 'Message scheduled successfully.', data: item });
 }));

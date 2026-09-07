@@ -180,10 +180,15 @@ async function loadHealth() {
 
 function setDefaultSchedule() {
   const date = new Date(Date.now() + 5 * 60 * 1000);
-  const pad = (number) => String(number).padStart(2, '0');
-  $('#dayInput').value = `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
-  $('#dayInput').min = new Date().toLocaleDateString('en-CA');
-  $('#timeInput').value = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+  }).formatToParts(date).filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]));
+  const todayParts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(new Date()).filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]));
+  $('#dayInput').value = `${parts.year}-${parts.month}-${parts.day}`;
+  $('#dayInput').min = `${todayParts.year}-${todayParts.month}-${todayParts.day}`;
+  $('#timeInput').value = `${parts.hour}:${parts.minute}`;
 }
 
 document.addEventListener('DOMContentLoaded', () => {
