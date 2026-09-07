@@ -9,6 +9,7 @@
     "start": "node scripts/supervisor.js",
     "start:direct": "node src/server.js",
     "test": "node --test --test-concurrency=1",
+    "db:clear": "node scripts/clear-data.js",
     "sample": "node scripts/create-sample.js"
   },
   "engines": {

@@ -9,44 +9,130 @@ function text(value) {
   return value === undefined || value === null ? '' : String(value).trim();
 }
 
-async function importRow(row) {
-  const agent = await Agent.findOneAndUpdate(
-    { name: text(row.agentName) }, { $setOnInsert: { name: text(row.agentName) } }, { upsert: true, new: true }
-  );
-  const category = await Lob.findOneAndUpdate(
-    { categoryName: text(row.categoryName) }, { $setOnInsert: { categoryName: text(row.categoryName) } }, { upsert: true, new: true }
-  );
-  const carrier = await Carrier.findOneAndUpdate(
-    { companyName: text(row.companyName) }, { $setOnInsert: { companyName: text(row.companyName) } }, { upsert: true, new: true }
-  );
+function uniqueValues(rows, field) {
+  return [...new Set(rows.map((row) => text(row[field])).filter(Boolean))];
+}
 
-  const identity = text(row.email)
-    ? { email: text(row.email).toLowerCase() }
-    : { firstName: text(row.firstName), phoneNumber: text(row.phoneNumber) };
-  const user = await User.findOneAndUpdate(identity, {
-    $set: {
-      firstName: text(row.firstName), dob: row.dob, address: text(row.address),
-      phoneNumber: text(row.phoneNumber), state: text(row.state), zipCode: text(row.zipCode),
-      email: text(row.email).toLowerCase() || undefined, gender: text(row.gender), userType: text(row.userType)
+function userIdentity(row) {
+  const email = text(row.email).toLowerCase();
+  return email
+    ? { filter: { email }, key: `email:${email}` }
+    : { filter: { firstName: text(row.firstName), phoneNumber: text(row.phoneNumber) }, key: `name:${text(row.firstName)}|phone:${text(row.phoneNumber)}` };
+}
+
+function docMap(docs, field) {
+  return new Map(docs.map((doc) => [text(doc[field]), doc._id]));
+}
+
+async function upsertLookup(model, field, values) {
+  if (!values.length) return new Map();
+  await model.bulkWrite(values.map((value) => ({
+    updateOne: {
+      filter: { [field]: value },
+      update: { $setOnInsert: { [field]: value } },
+      upsert: true
     }
-  }, { upsert: true, new: true, runValidators: true });
+  })), { ordered: false });
+  return docMap(await model.find({ [field]: { $in: values } }).select(`_id ${field}`).lean(), field);
+}
 
-  const account = await Account.findOneAndUpdate(
-    { accountName: text(row.accountName), userId: user._id },
-    { $setOnInsert: { accountName: text(row.accountName), userId: user._id } },
-    { upsert: true, new: true }
-  );
+async function importRows(rows) {
+  const policyNumbers = uniqueValues(rows, 'policyNumber');
+  const existingPolicies = new Set((await Policy.find({ policyNumber: { $in: policyNumbers } }).select('policyNumber').lean())
+    .map((policy) => text(policy.policyNumber)));
 
-  const existing = await Policy.exists({ policyNumber: text(row.policyNumber) });
-  await Policy.findOneAndUpdate({ policyNumber: text(row.policyNumber) }, {
-    $set: {
-      policyStartDate: row.policyStartDate, policyEndDate: row.policyEndDate,
-      categoryId: category._id, companyId: carrier._id, userId: user._id,
-      agentId: agent._id, accountId: account._id
-    },
-    $setOnInsert: { policyNumber: text(row.policyNumber) }
-  }, { upsert: true, runValidators: true });
-  return existing ? 'updated' : 'created';
+  const [agents, categories, carriers] = await Promise.all([
+    upsertLookup(Agent, 'name', uniqueValues(rows, 'agentName')),
+    upsertLookup(Lob, 'categoryName', uniqueValues(rows, 'categoryName')),
+    upsertLookup(Carrier, 'companyName', uniqueValues(rows, 'companyName'))
+  ]);
+
+  const userOperations = new Map();
+  for (const row of rows) {
+    const identity = userIdentity(row);
+    userOperations.set(identity.key, {
+      updateOne: {
+        filter: identity.filter,
+        update: {
+          $set: {
+            firstName: text(row.firstName),
+            dob: row.dob,
+            address: text(row.address),
+            phoneNumber: text(row.phoneNumber),
+            state: text(row.state),
+            zipCode: text(row.zipCode),
+            email: text(row.email).toLowerCase() || undefined,
+            gender: text(row.gender),
+            userType: text(row.userType)
+          }
+        },
+        upsert: true
+      }
+    });
+  }
+  if (userOperations.size) await User.bulkWrite([...userOperations.values()], { ordered: false });
+
+  const emailFilters = [];
+  const fallbackFilters = [];
+  for (const row of rows) {
+    const identity = userIdentity(row);
+    if (identity.filter.email) emailFilters.push(identity.filter.email);
+    else fallbackFilters.push(identity.filter);
+  }
+
+  const userQuery = [];
+  if (emailFilters.length) userQuery.push({ email: { $in: [...new Set(emailFilters)] } });
+  if (fallbackFilters.length) userQuery.push(...fallbackFilters);
+  const users = userQuery.length
+    ? await User.find({ $or: userQuery }).select('_id firstName phoneNumber email').lean()
+    : [];
+  const userMap = new Map(users.map((user) => {
+    const email = text(user.email).toLowerCase();
+    return [email ? `email:${email}` : `name:${text(user.firstName)}|phone:${text(user.phoneNumber)}`, user._id];
+  }));
+
+  const accountOperations = new Map();
+  for (const row of rows) {
+    const userId = userMap.get(userIdentity(row).key);
+    const accountName = text(row.accountName);
+    accountOperations.set(`${accountName}|${userId}`, {
+      updateOne: {
+        filter: { accountName, userId },
+        update: { $setOnInsert: { accountName, userId } },
+        upsert: true
+      }
+    });
+  }
+  if (accountOperations.size) await Account.bulkWrite([...accountOperations.values()], { ordered: false });
+
+  const accounts = await Account.find({
+    $or: rows.map((row) => ({ accountName: text(row.accountName), userId: userMap.get(userIdentity(row).key) }))
+  }).select('_id accountName userId').lean();
+  const accountMap = new Map(accounts.map((account) => [`${text(account.accountName)}|${account.userId}`, account._id]));
+
+  await Policy.bulkWrite(rows.map((row) => {
+    const userId = userMap.get(userIdentity(row).key);
+    return {
+      updateOne: {
+        filter: { policyNumber: text(row.policyNumber) },
+        update: {
+          $set: {
+            policyStartDate: row.policyStartDate,
+            policyEndDate: row.policyEndDate,
+            categoryId: categories.get(text(row.categoryName)),
+            companyId: carriers.get(text(row.companyName)),
+            userId,
+            agentId: agents.get(text(row.agentName)),
+            accountId: accountMap.get(`${text(row.accountName)}|${userId}`)
+          },
+          $setOnInsert: { policyNumber: text(row.policyNumber) }
+        },
+        upsert: true
+      }
+    };
+  }), { ordered: false });
+
+  return { created: policyNumbers.filter((policyNumber) => !existingPolicies.has(policyNumber)).length, updated: policyNumbers.filter((policyNumber) => existingPolicies.has(policyNumber)).length, rows: rows.length };
 }
 
 async function run() {
@@ -88,12 +174,9 @@ async function run() {
   }
 
   await connectDatabase(workerData.mongoUri);
-  const totals = { created: 0, updated: 0, rows: valid.length };
-  for (let index = 0; index < valid.length; index += 1) {
-    const outcome = await importRow(valid[index]);
-    totals[outcome] += 1;
-    if ((index + 1) % 25 === 0) parentPort.postMessage({ type: 'progress', processed: index + 1, total: valid.length });
-  }
+  parentPort.postMessage({ type: 'progress', processed: 0, total: valid.length });
+  const totals = await importRows(valid);
+  parentPort.postMessage({ type: 'progress', processed: valid.length, total: valid.length });
   await disconnectDatabase();
   return totals;
 }

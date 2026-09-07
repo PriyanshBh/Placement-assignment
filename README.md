@@ -11,6 +11,7 @@ PolicyPulse is a production-minded JavaScript solution for spreadsheet ingestion
 - Scheduled messages are stored as pending jobs, then inserted into `messages` at the requested local day/time.
 - The Node process samples its own CPU utilization. At 70% or more for three consecutive samples it exits with code `75`; the parent supervisor immediately launches a fresh server process.
 - Upload validation, safe file limits, security headers, cleanup, idempotent policy upserts, and automated integration tests are included.
+- Spreadsheet imports use batched MongoDB upserts for lookup collections, users, accounts, and policies to keep large CSV imports responsive.
 
 ## Quick start (Windows PowerShell)
 
@@ -63,6 +64,18 @@ npm test
 ```
 
 Configuration is documented in `.env.example`. For a direct, non-supervised process use `npm run start:direct`; `npm start` is the recommended command because it enables automatic restart behavior.
+
+## Clear imported data
+
+To clear all imported assessment data from the configured MongoDB database, first verify `.env` points to the intended database, then run:
+
+```powershell
+$env:CONFIRM_CLEAR_DATA="yes"
+npm run db:clear
+Remove-Item Env:\CONFIRM_CLEAR_DATA
+```
+
+This removes documents from `policies`, `accounts`, `users`, `agents`, `lobs`, `carriers`, `scheduledmessages`, and `messages`. It does not delete the database, users, cluster, indexes, or application code.
 
 ## Cloud deployment
 
